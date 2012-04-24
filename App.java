@@ -1,80 +1,141 @@
 package com.awesome.twit;
 
-import twitter4j.*;
-import twitter4j.auth.*;
 import java.util.Scanner;
+import twitter4j.*;
+import twitter4j.auth.AccessToken;
+import twitter4j.auth.RequestToken;
 
 /**
- * What up, G.
- *
+ * Twitter API Example.
+ * Demonstrates interaction with the Twitter API using the twitter4j library.
  */
-public class App 
-{
-    public static void main( String[] args ) throws TwitterException
-    {
-        TwitterFactory twiggy = new TwitterFactory();
-        Twitter twizzler = twiggy.getInstance();
+public class App {
+    
+    /**
+     * Main method.
+     * @param args
+     * @throws TwitterException
+     */
+    public static void main(String[] args) throws TwitterException {
         
+        // The TwitterFactory object provides an instance of a Twitter object
+        // via the getInstance() method. The Twitter object is the API consumer.
+        // It has the methods for interacting with the Twitter API.
+        TwitterFactory tf = new TwitterFactory();
+        Twitter twitter = tf.getInstance();
         
         boolean keepItGoin = true;
         do {
-            Scanner woot = new Scanner(System.in);
-            System.out.print("\n-----------------\n"+
-                    "1. Timeline\n2. Tweet\nQ. Quit\n"+
-                    "\n-----------------\n> ");
-            String choice = woot.nextLine();
+            // Main menu
+            Scanner input = new Scanner(System.in);
+            System.out.print("\n--------------------" +
+                    "\n1. Home Timeline\n2. Search\n3. Tweet" +
+                    "\n--------------------" +
+                    "\nA. Get Access Token\nQ. Quit" +
+                    "\n--------------------\n> ");
+            String choice = input.nextLine();
+            
+            try {
+                // Home Timeline
+                if (choice.equals("1")) {
 
-            if (choice.equals("1")) {
-                User user = twizzler.verifyCredentials();
-                System.out.println("@"+user.getScreenName()+"'s home timeline:");
-                for (Status status : twizzler.getHomeTimeline()) {
-                    System.out.println("\n@"+status.getUser().getScreenName()+": "+status.getText());
-                }
-                
-            } else if (choice.equals("2")) {
-                
-                System.out.print("Tweet: ");
-                String tweet = woot.nextLine();
-                Status status = twizzler.updateStatus(tweet);
-                System.out.print("Just tweeted: "+status.getText());
-                
-            } else if (choice.equalsIgnoreCase("A")) { // get access token
-                
-                try {
-                    RequestToken reqToken = twizzler.getOAuthRequestToken();
-                    System.out.println("Request token: " + reqToken.getToken() +
+                    // Display the user's screen name.
+                    User user = twitter.verifyCredentials();
+                    System.out.println("\n@" + user.getScreenName() + "'s timeline:");
+
+                    // Display recent tweets from the Home Timeline.
+                    for (Status status : twitter.getHomeTimeline()) {
+                        System.out.println("\n@" + status.getUser().getScreenName() +
+                                ": " + status.getText());
+                    }
+
+                // Search
+                } else if (choice.equals("2")) {
+
+                    // Ask the user for a search string.
+                    System.out.print("\nSearch: ");
+                    String searchStr = input.nextLine();
+
+                    // Create a Query object.
+                    Query query = new Query(searchStr);
+
+                    // Send API request to execute a search with the given query.
+                    QueryResult result = twitter.search(query);
+
+                    // Display search results.
+                    for (Tweet tweet : result.getTweets()) {
+                        System.out.println("\n@" + tweet.getFromUser() + ": " +
+                                tweet.getText());
+                    }
+
+                // Tweet
+                } else if (choice.equals("3")) {
+
+                    boolean isOkayLength = true;
+                    String tweet;
+                    do {
+                        // Ask the user for a tweet.
+                        System.out.print("\nTweet: ");
+                        tweet = input.nextLine();
+
+                        // Ensure the tweet length is okay.
+                        if (tweet.length() > 140) {
+                            System.out.println("Too long! Keep it under 140.");
+                            isOkayLength = false;
+                        }
+                    } while (isOkayLength == false);
+
+                    // Send API request to create a new tweet.
+                    Status status = twitter.updateStatus(tweet);
+                    System.out.println("Just tweeted: \"" + status.getText() + "\"");
+
+                // Get Access Token
+                } else if (choice.equalsIgnoreCase("A")) {
+
+                    // First, we ask Twitter for a request token.
+                    RequestToken reqToken = twitter.getOAuthRequestToken();
+                    System.out.println("\nRequest token: " + reqToken.getToken() +
                             "\nRequest token secret: " + reqToken.getTokenSecret());
-                    AccessToken accessToken = null;
 
+                    AccessToken accessToken = null;
                     while (accessToken == null) {
-                        System.out.print("Open the this URL in a browser: " +
-                                reqToken.getAuthorizationURL() +
-                                "\nGrant access, then enter the PIN here: ");
-                        String pin = woot.nextLine();
+                        
+                        // The authorization URL sends the request token to
+                        // Twitter in order to request an access token. At this
+                        // point, Twitter asks the user to authorize the request.
+                        // If the user authorizes, then Twitter provides a PIN.
+                        System.out.print("\nOpen this URL in a browser: " +
+                                "\n    " + reqToken.getAuthorizationURL() + "\n" +
+                                "\nAuthorize the app, then enter the PIN here: ");
+                        String pin = input.nextLine();
                         try {
-                            accessToken = twizzler.getOAuthAccessToken(reqToken, pin);
+                            // We use the provided PIN to get the access token.
+                            // The access token allows this app to access the
+                            // user's account without knowing his/her password.
+                            accessToken = twitter.getOAuthAccessToken(reqToken, pin);
                         } catch (TwitterException te) {
-                            System.out.println("Invalid PIN.");
+                            System.out.println(te.getMessage());
                         }
                     }
-                    System.out.println("Access token: " + accessToken.getToken() +
+                    System.out.println("\nAccess token: " + accessToken.getToken() +
                             "\nAccess token secret: " + accessToken.getTokenSecret() +
-                            "Success!");
-                    
-                } catch (IllegalStateException ise) {
-                    System.out.println("Access token already available.");
+                            "\nSuccess!");
+
+                // Quit
+                } else if (choice.equalsIgnoreCase("Q")) {
+
+                    keepItGoin = false;
+
+                // Bad choice
+                } else {
+
+                    System.out.println("Invalid option.");
                 }
                 
-            } else if (choice.equalsIgnoreCase("Q")) {
-                
-                keepItGoin = false;
-                
-            } else {
-                System.out.println("you stink");
+            } catch (IllegalStateException ise) {
+                System.out.println(ise.getMessage());
             }
 
-
-        } while (keepItGoin == true);
-        
+        } while(keepItGoin == true);
     }
 }
