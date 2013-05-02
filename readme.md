@@ -1,4 +1,6 @@
-Example: Interacting with the Twitter API in Java
+Code example for Evan Korth's Intro to Computer Science course.
+
+Interacting with the Twitter API in Java
 =================================================
 
 1. Define a new Twitter application
