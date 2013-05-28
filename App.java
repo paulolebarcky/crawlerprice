@@ -137,8 +137,11 @@ public class App {
 
           keepItGoinFullSteam = false;
 
-          // Bad choice
-        } else {
+
+        }
+        
+        // Bad choice
+        else {
 
           System.out.println("Invalid option.");
         }
