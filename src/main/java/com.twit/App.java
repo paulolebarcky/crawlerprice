@@ -1,6 +1,5 @@
-package com.awesome.twit;
+package com;
 
-import java.util.List;
 import java.util.Scanner;
 import twitter4j.*;
 import twitter4j.auth.AccessToken;
