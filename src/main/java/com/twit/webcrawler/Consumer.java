@@ -1,12 +1,14 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package com.twit.webcrawler;
 
+import com.twit.controller.CrawlerController;
+import com.twit.controller.ProdutoController;
+import com.twit.entity.Crawler;
+import com.twit.entity.Produto;
+import com.twit.model.ProdutoModel;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -21,7 +23,7 @@ import org.jsoup.select.Elements;
  */
 public class Consumer {
 
-    List<Produto> produtos = new ArrayList();
+    List<ProdutoModel> produtos = new ArrayList();
 
     int code = 1;
     int codeAnterior = 1;
@@ -34,37 +36,37 @@ public class Consumer {
 
         String urlSite = "http://www.magazineluiza.com.br/";
 
-        vasculharPrecoErradoHref(urlSite);
-//        HashSet<String> anchorsHref = new HashSet<String>();
-        //
-        //        try {
-        //            Document doc = Jsoup.connect(urlSite).get();
-        //            Elements hrefs = doc.select("a");
-        //
-        //            for (Element anchor : hrefs) {
-        //
-        //                String a = anchor.attr("href").trim();
-        //
-        //                if (!a.startsWith("http")) {
-        //                    a = urlSite + a;
-        //                }
-        //
-        //                anchorsHref.add(a);
-        //            }
-        //
-        //            for (String s : anchorsHref) {
-        //                System.out.println(s);
-        //            }
-        //
-        //        } catch (IOException ex) {
-        //            Logger.getLogger(WebCrawler.class.getName()).log(Level.SEVERE, null, ex);
-        //        }
-        //
-        //        for (String anchorsHref1 : anchorsHref) {
-        //
-        //            vasculharPrecoErradoHref(anchorsHref1);
-        //
-        //        }
+        //vasculharPrecoErradoHref(urlSite);
+        HashSet<String> anchorsHref = new HashSet<String>();
+
+        try {
+            Document doc = Jsoup.connect(urlSite).get();
+            Elements hrefs = doc.select("a");
+
+            for (Element anchor : hrefs) {
+
+                String a = anchor.attr("href").trim();
+
+                if (!a.startsWith("http")) {
+                    a = urlSite + a;
+                }
+
+                anchorsHref.add(a);
+            }
+
+            for (String s : anchorsHref) {
+                System.out.println(s);
+            }
+
+        } catch (IOException ex) {
+            Logger.getLogger(WebCrawler.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        for (String anchorsHref1 : anchorsHref) {
+
+            vasculharPrecoErradoHref(anchorsHref1);
+
+        }
     }
 //
 
@@ -74,15 +76,16 @@ public class Consumer {
             Document doc = Jsoup.connect(href).get();
             Elements hrefs = doc.select("span");
 
-            Produto produto;
+            ProdutoModel produto;
 
             for (Element anchor : hrefs) {
 
                 String a = anchor.attr("class").trim();
 
                 switch (a) {
+
                     case "productTitle":
-                        produto = new Produto();
+                        produto = new ProdutoModel();
                         produto.setCode(code);
                         produto.setNome(anchor.text());
 
@@ -92,6 +95,7 @@ public class Consumer {
                         produtos.add(produto);
 
                         break;
+
                     case "originalPrice":
                         String x = anchor.text().trim();
 
@@ -104,6 +108,7 @@ public class Consumer {
                         produto = getProduto(codeAnterior);
                         produto.setOriginalPrice(origPrice);
                         break;
+
                     case "price":
                         produto = getProduto(codeAnterior);
 
@@ -132,19 +137,43 @@ public class Consumer {
                 }
             }
 
-            for (Produto p : produtos) {
+            Crawler crawler = new Crawler();
+            crawler.setDataCriacao(new Date());
+            crawler.setPath(href);
+            CrawlerController crawlerController = new CrawlerController(crawler);
+
+            try {
+                crawler = crawlerController.create();
+            } catch (Exception ex) {
+                Logger.getLogger(Consumer.class.getName()).log(Level.SEVERE, null, ex);
+            }
+
+            for (ProdutoModel p : produtos) {
                 System.out.println(p.toString());
+
+                Produto produtoNew = new Produto();
+                produtoNew.setIdcrawler(crawler);
+                produtoNew.setNome(p.getNome());
+                produtoNew.setPrecooriginal(p.getOriginalPrice());
+                produtoNew.setPreco(p.getPrice());
+                produtoNew.setPercentual(p.getPercent());
+
+                ProdutoController produtoController = new ProdutoController(produtoNew);
+                try {
+                    produtoController.create();
+                } catch (Exception ex) {
+                    Logger.getLogger(Consumer.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
 
         } catch (IOException ex) {
             Logger.getLogger(WebCrawler.class.getName()).log(Level.SEVERE, null, ex);
         }
-
     }
 
-    public Produto getProduto(int code) {
-        Produto prod = null;
-        for (Produto produto : produtos) {
+    public ProdutoModel getProduto(int code) {
+        ProdutoModel prod = null;
+        for (ProdutoModel produto : produtos) {
 
             if (produto.getCode() == code) {
                 prod = produto;
@@ -153,59 +182,5 @@ public class Consumer {
         }
 
         return prod;
-    }
-}
-
-class Produto {
-
-    private int code;
-    private String nome;
-    private double originalPrice;
-    private double price;
-    private double percent;
-
-    public int getCode() {
-        return code;
-    }
-
-    public void setCode(int code) {
-        this.code = code;
-    }
-
-    public String getNome() {
-        return nome;
-    }
-
-    public void setNome(String nome) {
-        this.nome = nome;
-    }
-
-    public double getOriginalPrice() {
-        return originalPrice;
-    }
-
-    public void setOriginalPrice(double originalPrice) {
-        this.originalPrice = originalPrice;
-    }
-
-    public double getPrice() {
-        return price;
-    }
-
-    public void setPrice(double price) {
-        this.price = price;
-    }
-
-    public double getPercent() {
-        return percent;
-    }
-
-    public void setPercent(double percent) {
-        this.percent = percent;
-    }
-
-    @Override
-    public String toString() {
-        return "Produto{" + "code=" + code + ", nome=" + nome + ", originalPrice=" + originalPrice + ", price=" + price + ", percent=" + percent + '}';
     }
 }

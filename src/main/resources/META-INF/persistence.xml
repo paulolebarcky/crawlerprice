@@ -5,6 +5,9 @@
     <class>com.twit.entity.Pais</class>
     <class>com.twit.entity.Estado</class>
     <class>com.twit.entity.Cidade</class>
+    <class>com.twit.entity.Produto</class>
+    <class>com.twit.entity.Crawler</class>
+    <class>com.twit.entity.Usuario</class>
     <properties>
       <property name="javax.persistence.jdbc.url" value="jdbc:postgresql://127.0.0.1:5433/crawler"/>
       <property name="javax.persistence.jdbc.password" value="plus"/>
